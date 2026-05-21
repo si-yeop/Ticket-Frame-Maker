@@ -235,7 +235,6 @@
         radial-gradient(circle at 0 75%, transparent 0 18px, var(--ticket-paper, #f8f7f4) 19px) left top / 51% 100% no-repeat,
         radial-gradient(circle at 100% 75%, transparent 0 18px, var(--ticket-paper, #f8f7f4) 19px) right top / 51% 100% no-repeat;
       border-radius: 8px;
-      filter: drop-shadow(0 24px 42px rgba(0, 0, 0, 0.32));
     }
 
     .eyebrow {
@@ -938,11 +937,26 @@
     }
 
     function ticketPaperPath(ctx, ticket, notchY, notchR) {
-      roundedRect(ctx, ticket.x, ticket.y, ticket.w, ticket.h, 16);
-      ctx.moveTo(ticket.x + notchR, notchY);
-      ctx.arc(ticket.x, notchY, notchR, 0, Math.PI * 2);
-      ctx.moveTo(ticket.x + ticket.w + notchR, notchY);
-      ctx.arc(ticket.x + ticket.w, notchY, notchR, 0, Math.PI * 2);
+      const x = ticket.x;
+      const y = ticket.y;
+      const w = ticket.w;
+      const h = ticket.h;
+      const r = 16;
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.lineTo(x + w - r, y);
+      ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+      ctx.lineTo(x + w, notchY - notchR);
+      ctx.arc(x + w, notchY, notchR, -Math.PI / 2, Math.PI / 2, true);
+      ctx.lineTo(x + w, y + h - r);
+      ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+      ctx.lineTo(x + r, y + h);
+      ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+      ctx.lineTo(x, notchY + notchR);
+      ctx.arc(x, notchY, notchR, Math.PI / 2, -Math.PI / 2, true);
+      ctx.lineTo(x, y + r);
+      ctx.quadraticCurveTo(x, y, x + r, y);
+      ctx.closePath();
     }
 
     function drawCoverImage(ctx, image, x, y, w, h, fit, posX, posY, scale) {
@@ -1085,14 +1099,9 @@
       const contentW = ticket.w - pad * 2;
       const scale = ticket.w / 384;
 
-      ctx.save();
-      ctx.shadowColor = "rgba(0,0,0,0.28)";
-      ctx.shadowBlur = 48;
-      ctx.shadowOffsetY = 22;
       ticketPaperPath(ctx, ticket, notchY, notchR);
       ctx.fillStyle = paper;
-      ctx.fill("evenodd");
-      ctx.restore();
+      ctx.fill();
 
       ctx.fillStyle = ink;
       ctx.textBaseline = "top";
