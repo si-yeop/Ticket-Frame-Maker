@@ -1,0 +1,1166 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ticket Frame Maker</title>
+  <style>
+    :root {
+      --ink: #111111;
+      --muted: #5f646b;
+      --line: #1b1b1b;
+      --paper: #f8f7f4;
+      --panel: #ffffff;
+      --bg: #d6d0c4;
+      --accent: #101010;
+      --control: #ece9e2;
+      --focus: #246bfe;
+      font-family: Inter, Pretendard, "Noto Sans KR", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      background: #e9e5dc;
+    }
+
+    button,
+    input,
+    select,
+    textarea {
+      font: inherit;
+    }
+
+    button {
+      border: 0;
+      cursor: pointer;
+    }
+
+    .app {
+      display: grid;
+      grid-template-columns: minmax(320px, 420px) 1fr;
+      min-height: 100vh;
+    }
+
+    .controls {
+      height: 100vh;
+      overflow: auto;
+      padding: 22px;
+      background: #fbfaf7;
+      border-right: 1px solid #d9d4ca;
+    }
+
+    .brandbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 18px;
+      line-height: 1.2;
+      letter-spacing: 0;
+    }
+
+    .export-btn {
+      min-height: 38px;
+      padding: 0 14px;
+      border-radius: 6px;
+      color: #ffffff;
+      background: var(--accent);
+      white-space: nowrap;
+    }
+
+    .secondary-btn {
+      width: 100%;
+      min-height: 38px;
+      padding: 0 12px;
+      border: 1px solid #cfc9bf;
+      border-radius: 6px;
+      color: #171717;
+      background: #ffffff;
+    }
+
+    .group {
+      padding: 18px 0;
+      border-top: 1px solid #ded9cf;
+    }
+
+    .group:first-of-type {
+      border-top: 0;
+      padding-top: 0;
+    }
+
+    .group-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+      font-size: 13px;
+      font-weight: 800;
+      color: #232323;
+    }
+
+    .field {
+      display: grid;
+      gap: 6px;
+      margin-bottom: 12px;
+    }
+
+    .field:last-child {
+      margin-bottom: 0;
+    }
+
+    label {
+      font-size: 12px;
+      font-weight: 700;
+      color: #363636;
+    }
+
+    input[type="text"],
+    input[type="number"],
+    select,
+    textarea {
+      width: 100%;
+      min-height: 38px;
+      padding: 9px 10px;
+      border: 1px solid #cfc9bf;
+      border-radius: 6px;
+      color: #111111;
+      background: #ffffff;
+      outline: none;
+    }
+
+    textarea {
+      min-height: 74px;
+      resize: vertical;
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      border-color: var(--focus);
+      box-shadow: 0 0 0 3px rgba(36, 107, 254, 0.14);
+    }
+
+    input[type="file"] {
+      width: 100%;
+      padding: 9px;
+      border: 1px dashed #aaa195;
+      border-radius: 6px;
+      background: #ffffff;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: #111111;
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .color-row {
+      display: grid;
+      grid-template-columns: 42px 1fr;
+      gap: 10px;
+      align-items: center;
+    }
+
+    input[type="color"] {
+      width: 42px;
+      height: 38px;
+      padding: 2px;
+      border: 1px solid #cfc9bf;
+      border-radius: 6px;
+      background: #ffffff;
+    }
+
+    .stage {
+      position: relative;
+      display: grid;
+      place-items: center;
+      min-height: 100vh;
+      padding: 34px;
+      overflow: auto;
+      background:
+        linear-gradient(rgba(18, 17, 15, 0.54), rgba(18, 17, 15, 0.54)),
+        radial-gradient(circle at 20% 12%, rgba(255, 255, 255, 0.32), transparent 30%),
+        linear-gradient(135deg, #726b60, #d8d1c6 45%, #5c554d);
+    }
+
+    .stage::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background-image: var(--backdrop-image, none);
+      background-size: cover;
+      background-position: center;
+      opacity: var(--backdrop-opacity, 0.42);
+      filter: grayscale(0.08) contrast(0.92);
+    }
+
+    .preview-wrap {
+      position: relative;
+      width: min(420px, calc(100vw - 48px));
+      aspect-ratio: 450 / 650;
+    }
+
+    .ticket {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      grid-template-rows: auto auto auto 1fr auto;
+      gap: 0;
+      padding: 20px;
+      color: var(--ticket-ink, #101010);
+      background:
+        radial-gradient(circle at 0 75%, transparent 0 18px, var(--ticket-paper, #f8f7f4) 19px) left top / 51% 100% no-repeat,
+        radial-gradient(circle at 100% 75%, transparent 0 18px, var(--ticket-paper, #f8f7f4) 19px) right top / 51% 100% no-repeat;
+      border-radius: 8px;
+      filter: drop-shadow(0 24px 42px rgba(0, 0, 0, 0.32));
+    }
+
+    .eyebrow {
+      min-height: 13px;
+      margin-bottom: 9px;
+      text-align: center;
+      font-size: 8px;
+      line-height: 1.15;
+      color: var(--ticket-muted, #222222);
+      overflow-wrap: anywhere;
+    }
+
+    .main-photo {
+      position: relative;
+      height: 198px;
+      overflow: hidden;
+      background: #d5d1ca;
+      cursor: grab;
+      touch-action: none;
+      user-select: none;
+    }
+
+    .main-photo.is-dragging {
+      cursor: grabbing;
+    }
+
+    .main-photo img {
+      position: absolute;
+      display: block;
+      width: 100%;
+      height: 100%;
+      max-width: none;
+      max-height: none;
+      pointer-events: none;
+      -webkit-user-drag: none;
+      user-select: none;
+    }
+
+    .placeholder {
+      display: grid;
+      place-items: center;
+      height: 100%;
+      padding: 24px;
+      color: #69635c;
+      text-align: center;
+      font-size: 13px;
+      background:
+        linear-gradient(135deg, rgba(255,255,255,0.1), rgba(0,0,0,0.12)),
+        #cfc8bc;
+    }
+
+    .rule {
+      height: 1px;
+      margin: 11px 0 12px;
+      background: var(--ticket-line, #1b1b1b);
+    }
+
+    .subtitle {
+      margin: 0 0 6px;
+      min-height: 20px;
+      font-size: 15px;
+      font-weight: 500;
+      line-height: 1.25;
+      overflow-wrap: anywhere;
+    }
+
+    .title {
+      margin: 0 0 14px;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: clamp(34px, 9.8vw, 46px);
+      line-height: 0.94;
+      font-weight: 700;
+      letter-spacing: 0;
+      overflow-wrap: anywhere;
+    }
+
+    .info-rule {
+      height: 1px;
+      margin: 0 0 9px;
+      background: var(--ticket-line, #1b1b1b);
+    }
+
+    .meta {
+      display: grid;
+      grid-template-columns: 66px 1fr;
+      gap: 7px 0;
+      margin-bottom: 16px;
+      font-size: 13px;
+      line-height: 1.26;
+    }
+
+    .meta strong {
+      font-weight: 900;
+    }
+
+    .bottom {
+      align-self: end;
+    }
+
+    .cutline {
+      height: 1px;
+      margin-bottom: 13px;
+      background:
+        repeating-linear-gradient(90deg, var(--ticket-line, #1b1b1b) 0 4px, transparent 4px 7px);
+    }
+
+    .footer {
+      display: grid;
+      grid-template-columns: 1fr 48%;
+      gap: 14px;
+      align-items: end;
+    }
+
+    .footer-title {
+      font-family: Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif;
+      font-size: 20px;
+      line-height: 0.96;
+      overflow-wrap: anywhere;
+    }
+
+    .footer-sub {
+      margin-top: 4px;
+      font-size: 14px;
+      font-weight: 900;
+      line-height: 1.05;
+      overflow-wrap: anywhere;
+    }
+
+    .barcode {
+      display: grid;
+      grid-template-columns: 45px 1fr;
+      gap: 9px;
+      align-items: end;
+      height: 45px;
+    }
+
+    .qr-mark {
+      display: grid;
+      grid-template-columns: repeat(9, 1fr);
+      grid-template-rows: repeat(9, 1fr);
+      gap: 1px;
+      width: 45px;
+      height: 45px;
+    }
+
+    .qr-cell {
+      background: transparent;
+    }
+
+    .qr-cell.is-on {
+      background: var(--ticket-line, #111111);
+    }
+
+    .serial-mark {
+      display: grid;
+      gap: 5px;
+      align-content: end;
+      height: 45px;
+    }
+
+    .serial-mark span {
+      display: block;
+      height: 3px;
+      background: var(--ticket-line, #111111);
+    }
+
+    .serial-mark span:nth-child(1) {
+      width: 88%;
+    }
+
+    .serial-mark span:nth-child(2) {
+      width: 64%;
+    }
+
+    .serial-mark span:nth-child(3) {
+      width: 76%;
+    }
+
+    .serial-number {
+      min-height: 11px;
+      font-size: 9px;
+      font-weight: 800;
+      line-height: 1;
+      letter-spacing: 0;
+      color: var(--ticket-ink, #101010);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .micro {
+      margin-top: 7px;
+      font-size: 10px;
+      color: var(--ticket-muted, #444444);
+      text-align: right;
+      overflow-wrap: anywhere;
+    }
+
+    @media (max-width: 900px) {
+      .app {
+        grid-template-columns: 1fr;
+      }
+
+      .controls {
+        height: auto;
+        max-height: none;
+        border-right: 0;
+        border-bottom: 1px solid #d9d4ca;
+      }
+
+      .stage {
+        min-height: 760px;
+        padding: 26px 16px;
+      }
+    }
+
+    @media (max-width: 460px) {
+      .controls {
+        padding: 16px;
+      }
+
+      .brandbar {
+        align-items: stretch;
+        flex-direction: column;
+      }
+
+      .export-btn {
+        width: 100%;
+      }
+
+      .row {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <aside class="controls" aria-label="편집 패널">
+      <div class="brandbar">
+        <h1>Ticket Frame Maker</h1>
+        <button class="export-btn" id="downloadPng" type="button">PNG 저장</button>
+      </div>
+
+      <section class="group">
+        <div class="group-title">이미지</div>
+        <div class="field">
+          <label for="photoInput">메인 사진</label>
+          <input id="photoInput" type="file" accept="image/*">
+        </div>
+        <div class="field">
+          <label for="backdropInput">배경 사진</label>
+          <input id="backdropInput" type="file" accept="image/*">
+        </div>
+        <div class="row">
+          <div class="field">
+            <label for="fit">사진 맞춤</label>
+            <select id="fit">
+              <option value="cover">채우기</option>
+              <option value="contain">전체 보기</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="imageScale">사진 확대</label>
+            <input id="imageScale" type="range" min="1" max="2" step="0.01" value="1">
+          </div>
+        </div>
+        <div class="row">
+          <div class="field">
+            <label for="imageX">사진 좌우</label>
+            <input id="imageX" type="range" min="0" max="100" step="1" value="50">
+          </div>
+          <div class="field">
+            <label for="imageY">사진 상하</label>
+            <input id="imageY" type="range" min="0" max="100" step="1" value="50">
+          </div>
+        </div>
+        <button class="secondary-btn" id="resetPhotoPosition" type="button">사진 위치 초기화</button>
+      </section>
+
+      <section class="group">
+        <div class="group-title">문구</div>
+        <div class="field">
+          <label for="eyebrowInput">상단 문구</label>
+          <input id="eyebrowInput" type="text" value="test">
+        </div>
+        <div class="field">
+          <label for="subtitleInput">보조 제목</label>
+          <input id="subtitleInput" type="text" value="test">
+        </div>
+        <div class="field">
+          <label for="titleInput">큰 제목</label>
+          <textarea id="titleInput">test</textarea>
+        </div>
+        <div class="row">
+          <div class="field">
+            <label for="dateLabelInput">날짜 라벨</label>
+            <input id="dateLabelInput" type="text" value="Dete." readonly>
+          </div>
+          <div class="field">
+            <label for="dateInput">날짜</label>
+            <input id="dateInput" type="text" value="test">
+          </div>
+        </div>
+        <div class="row">
+          <div class="field">
+            <label for="placeLabelInput">장소 라벨</label>
+            <input id="placeLabelInput" type="text" value="Locate" readonly>
+          </div>
+          <div class="field">
+            <label for="placeInput">장소</label>
+            <input id="placeInput" type="text" value="test">
+          </div>
+        </div>
+        <div class="row">
+          <div class="field">
+            <label for="footerTitleInput">하단 영문</label>
+            <input id="footerTitleInput" type="text" value="test">
+          </div>
+          <div class="field">
+            <label for="footerSubInput">하단 한글</label>
+            <input id="footerSubInput" type="text" value="test">
+          </div>
+        </div>
+        <div class="field">
+          <label for="microInput">바코드 옆 작은 문구</label>
+          <input id="microInput" type="text" value="test">
+        </div>
+        <div class="field">
+          <label for="serialInput">검표 시리얼 번호</label>
+          <input id="serialInput" type="text" value="test">
+        </div>
+      </section>
+
+      <section class="group">
+        <div class="group-title">스타일</div>
+        <div class="row">
+          <div class="field">
+            <label for="ticketColor">티켓 색상</label>
+            <div class="color-row">
+              <input id="ticketColor" type="color" value="#f8f7f4">
+              <input data-color-text="ticketColor" type="text" value="#f8f7f4">
+            </div>
+          </div>
+          <div class="field">
+            <label for="textColor">글자 색상</label>
+            <div class="color-row">
+              <input id="textColor" type="color" value="#101010">
+              <input data-color-text="textColor" type="text" value="#101010">
+            </div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="field">
+            <label for="lineColor">선 색상</label>
+            <div class="color-row">
+              <input id="lineColor" type="color" value="#1b1b1b">
+              <input data-color-text="lineColor" type="text" value="#1b1b1b">
+            </div>
+          </div>
+          <div class="field">
+            <label for="backdropOpacity">배경 농도</label>
+            <input id="backdropOpacity" type="range" min="0" max="0.8" step="0.01" value="0.42">
+          </div>
+        </div>
+        <div class="row">
+          <div class="field">
+            <label for="titleSize">제목 크기</label>
+            <input id="titleSize" type="range" min="34" max="58" step="1" value="46">
+          </div>
+          <div class="field">
+            <label for="photoHeight">사진 높이</label>
+            <input id="photoHeight" type="range" min="150" max="250" step="1" value="198">
+          </div>
+        </div>
+      </section>
+    </aside>
+
+    <section class="stage" id="stage" aria-label="미리보기">
+      <div class="preview-wrap">
+        <article class="ticket" id="ticketPreview">
+          <div class="eyebrow" id="eyebrowText"></div>
+          <div class="main-photo" id="photoBox">
+            <div class="placeholder" id="photoPlaceholder"></div>
+          </div>
+          <div>
+            <div class="rule"></div>
+            <p class="subtitle" id="subtitleText"></p>
+            <h2 class="title" id="titleText"></h2>
+            <div class="info-rule"></div>
+            <div class="meta">
+              <strong id="dateLabelText"></strong>
+              <span id="dateText"></span>
+              <strong id="placeLabelText"></strong>
+              <span id="placeText"></span>
+            </div>
+          </div>
+          <div></div>
+          <div class="bottom">
+            <div class="cutline"></div>
+            <div class="footer">
+              <div>
+                <div class="footer-title" id="footerTitleText"></div>
+                <div class="footer-sub" id="footerSubText"></div>
+              </div>
+              <div>
+                <div class="barcode" aria-hidden="true">
+                  <div class="qr-mark" id="qrMark"></div>
+                  <div class="serial-mark">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                    <div class="serial-number" id="serialNumberText"></div>
+                  </div>
+                </div>
+                <div class="micro" id="microText"></div>
+              </div>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const state = {
+      photo: null,
+      backdrop: null,
+      drag: null
+    };
+
+    const fields = {
+      eyebrowInput: "eyebrowText",
+      subtitleInput: "subtitleText",
+      titleInput: "titleText",
+      dateLabelInput: "dateLabelText",
+      dateInput: "dateText",
+      placeLabelInput: "placeLabelText",
+      placeInput: "placeText",
+      footerTitleInput: "footerTitleText",
+      footerSubInput: "footerSubText",
+      microInput: "microText",
+      serialInput: "serialNumberText"
+    };
+
+    const fonts = {
+      sans: 'Inter, Pretendard, "Noto Sans KR", Arial, sans-serif',
+      serif: 'Georgia, "Times New Roman", serif',
+      narrow: 'Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif'
+    };
+
+    function bindText() {
+      Object.entries(fields).forEach(([inputId, targetId]) => {
+        const input = $(inputId);
+        const target = $(targetId);
+        const update = () => {
+          target.textContent = input.value;
+          if (inputId === "titleInput") target.innerHTML = escapeHtml(input.value).replace(/\n/g, "<br>");
+          if (inputId === "serialInput" || inputId === "titleInput") updateTicketCodePattern();
+        };
+        input.addEventListener("input", update);
+        update();
+      });
+    }
+
+    function seededValue(text) {
+      let seed = 0;
+      for (let i = 0; i < text.length; i += 1) seed = (seed * 31 + text.charCodeAt(i)) >>> 0;
+      return seed || 24681357;
+    }
+
+    function updateTicketCodePattern() {
+      const qr = $("qrMark");
+      if (!qr) return;
+      const serial = $("serialInput")?.value || "test";
+      const source = `${serial}|${$("titleInput")?.value || ""}`;
+      let seed = seededValue(source);
+      qr.innerHTML = "";
+      for (let row = 0; row < 9; row += 1) {
+        for (let col = 0; col < 9; col += 1) {
+          const cell = document.createElement("span");
+          cell.className = "qr-cell";
+          const inMarker = (col < 3 && row < 3) || (col > 5 && row < 3) || (col < 3 && row > 5);
+          if (inMarker) {
+            cell.classList.add("is-on");
+          } else {
+            seed = (seed * 1664525 + 1013904223) >>> 0;
+            if (seed % 3 === 0) cell.classList.add("is-on");
+          }
+          qr.appendChild(cell);
+        }
+      }
+
+      document.querySelectorAll(".serial-mark > span").forEach((bar, index) => {
+        seed = (seed * 1103515245 + 12345) >>> 0;
+        const width = 48 + ((seed >>> index) % 45);
+        bar.style.width = `${width}%`;
+      });
+    }
+
+    function escapeHtml(value) {
+      return value
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    function loadImageFromInput(input, callback) {
+      const file = input.files && input.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        const image = new Image();
+        image.onload = () => callback(reader.result, image);
+        image.src = reader.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function setMainPhoto(src, image) {
+      state.photo = { src, image };
+      const box = $("photoBox");
+      box.innerHTML = "";
+      const img = document.createElement("img");
+      img.src = src;
+      img.alt = "";
+      img.draggable = false;
+      box.appendChild(img);
+      updateImageStyles();
+    }
+
+    function setBackdrop(src, image) {
+      state.backdrop = { src, image };
+      $("stage").style.setProperty("--backdrop-image", `url("${src}")`);
+    }
+
+    function updateImageStyles() {
+      const img = $("photoBox").querySelector("img");
+      if (!img || !state.photo) return;
+      const box = $("photoBox").getBoundingClientRect();
+      const imgRatio = state.photo.image.naturalWidth / state.photo.image.naturalHeight;
+      const boxRatio = box.width / box.height;
+      const fit = $("fit").value;
+      const scale = Number($("imageScale").value);
+      let baseWidth;
+      let baseHeight;
+
+      if ((fit === "contain" && imgRatio > boxRatio) || (fit === "cover" && imgRatio < boxRatio)) {
+        baseWidth = box.width;
+        baseHeight = baseWidth / imgRatio;
+      } else {
+        baseHeight = box.height;
+        baseWidth = baseHeight * imgRatio;
+      }
+
+      const width = baseWidth * scale;
+      const height = baseHeight * scale;
+      const x = Number($("imageX").value) / 100;
+      const y = Number($("imageY").value) / 100;
+
+      img.style.width = `${width}px`;
+      img.style.height = `${height}px`;
+      img.style.left = `${(box.width - width) * x}px`;
+      img.style.top = `${(box.height - height) * y}px`;
+    }
+
+    function clamp(value, min, max) {
+      return Math.min(max, Math.max(min, value));
+    }
+
+    function setImagePosition(x, y) {
+      $("imageX").value = String(Math.round(clamp(x, 0, 100)));
+      $("imageY").value = String(Math.round(clamp(y, 0, 100)));
+      updateImageStyles();
+    }
+
+    function bindPhotoDrag() {
+      const box = $("photoBox");
+      box.addEventListener("dragstart", (event) => event.preventDefault());
+      box.addEventListener("pointerdown", (event) => {
+        if (!state.photo) return;
+        event.preventDefault();
+        const rect = box.getBoundingClientRect();
+        const img = box.querySelector("img");
+        const imgRect = img.getBoundingClientRect();
+        state.drag = {
+          pointerId: event.pointerId,
+          startClientX: event.clientX,
+          startClientY: event.clientY,
+          startImageX: Number($("imageX").value),
+          startImageY: Number($("imageY").value),
+          startLeft: imgRect.left - rect.left,
+          startTop: imgRect.top - rect.top,
+          width: rect.width,
+          height: rect.height,
+          imageWidth: imgRect.width,
+          imageHeight: imgRect.height
+        };
+        box.classList.add("is-dragging");
+        box.setPointerCapture(event.pointerId);
+      });
+
+      box.addEventListener("pointermove", (event) => {
+        if (!state.drag || state.drag.pointerId !== event.pointerId) return;
+        event.preventDefault();
+        const deltaX = event.clientX - state.drag.startClientX;
+        const deltaY = event.clientY - state.drag.startClientY;
+        const travelX = state.drag.width - state.drag.imageWidth;
+        const travelY = state.drag.height - state.drag.imageHeight;
+        const nextX = Math.abs(travelX) < 1
+          ? state.drag.startImageX
+          : ((state.drag.startLeft + deltaX) / travelX) * 100;
+        const nextY = Math.abs(travelY) < 1
+          ? state.drag.startImageY
+          : ((state.drag.startTop + deltaY) / travelY) * 100;
+        setImagePosition(nextX, nextY);
+      });
+
+      const stopDrag = (event) => {
+        if (!state.drag || state.drag.pointerId !== event.pointerId) return;
+        state.drag = null;
+        box.classList.remove("is-dragging");
+        if (box.hasPointerCapture(event.pointerId)) box.releasePointerCapture(event.pointerId);
+      };
+
+      box.addEventListener("pointerup", stopDrag);
+      box.addEventListener("pointercancel", stopDrag);
+    }
+
+    function updateTheme() {
+      const preview = $("ticketPreview");
+      const ticketColor = $("ticketColor").value;
+      const textColor = $("textColor").value;
+      const lineColor = $("lineColor").value;
+      preview.style.setProperty("--ticket-paper", ticketColor);
+      preview.style.setProperty("--ticket-ink", textColor);
+      preview.style.setProperty("--ticket-line", lineColor);
+      preview.style.setProperty("--ticket-muted", textColor);
+      $("stage").style.setProperty("--backdrop-opacity", $("backdropOpacity").value);
+      $("titleText").style.fontSize = `${$("titleSize").value}px`;
+      $("photoBox").style.height = `${$("photoHeight").value}px`;
+      updateImageStyles();
+    }
+
+    function syncColorText() {
+      document.querySelectorAll("[data-color-text]").forEach((input) => {
+        const color = $(input.dataset.colorText);
+        color.addEventListener("input", () => {
+          input.value = color.value;
+          updateTheme();
+        });
+        input.addEventListener("input", () => {
+          if (/^#[0-9a-f]{6}$/i.test(input.value)) {
+            color.value = input.value;
+            updateTheme();
+          }
+        });
+      });
+    }
+
+    function roundedRect(ctx, x, y, w, h, r) {
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.lineTo(x + w - r, y);
+      ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+      ctx.lineTo(x + w, y + h - r);
+      ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+      ctx.lineTo(x + r, y + h);
+      ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+      ctx.lineTo(x, y + r);
+      ctx.quadraticCurveTo(x, y, x + r, y);
+      ctx.closePath();
+    }
+
+    function drawCoverImage(ctx, image, x, y, w, h, fit, posX, posY, scale) {
+      const imgRatio = image.naturalWidth / image.naturalHeight;
+      const boxRatio = w / h;
+      let dw;
+      let dh;
+      if ((fit === "contain" && imgRatio > boxRatio) || (fit === "cover" && imgRatio < boxRatio)) {
+        dw = w * scale;
+        dh = dw / imgRatio;
+      } else {
+        dh = h * scale;
+        dw = dh * imgRatio;
+      }
+      const dx = x + (w - dw) * posX;
+      const dy = y + (h - dh) * posY;
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(x, y, w, h);
+      ctx.clip();
+      ctx.fillStyle = "#d2ccc1";
+      ctx.fillRect(x, y, w, h);
+      ctx.drawImage(image, dx, dy, dw, dh);
+      ctx.restore();
+    }
+
+    function drawWrappedText(ctx, text, x, y, maxWidth, lineHeight, maxLines) {
+      const lines = [];
+      const sourceLines = String(text).split("\n");
+      sourceLines.forEach((source) => {
+        const tokens = source.split(/(\s+)/).filter(Boolean);
+        let line = "";
+        tokens.forEach((token) => {
+          if (ctx.measureText(token).width > maxWidth) {
+            if (line.trim()) {
+              lines.push(line.trimEnd());
+              line = "";
+            }
+            let chunk = "";
+            [...token].forEach((char) => {
+              const nextChunk = chunk + char;
+              if (ctx.measureText(nextChunk).width > maxWidth && chunk) {
+                lines.push(chunk);
+                chunk = char;
+              } else {
+                chunk = nextChunk;
+              }
+            });
+            line = chunk;
+            return;
+          }
+          const next = line + token;
+          if (ctx.measureText(next).width > maxWidth && line.trim()) {
+            lines.push(line.trimEnd());
+            line = token.trimStart();
+          } else {
+            line = next;
+          }
+        });
+        lines.push(line.trimEnd());
+      });
+      const usable = maxLines ? lines.slice(0, maxLines) : lines;
+      usable.forEach((line, index) => ctx.fillText(line, x, y + index * lineHeight));
+      return y + usable.length * lineHeight;
+    }
+
+    function drawTicketCode(ctx, x, y, w, h, color, seedText, serialText) {
+      let seed = seededValue(seedText);
+      ctx.fillStyle = color;
+      const qrSize = h;
+      const cell = qrSize / 9;
+      const drawCell = (cx, cy, cw = 1, ch = 1) => {
+        ctx.fillRect(x + cx * cell, y + cy * cell, cw * cell, ch * cell);
+      };
+
+      drawCell(0, 0, 3, 3);
+      drawCell(6, 0, 3, 3);
+      drawCell(0, 6, 3, 3);
+      for (let row = 0; row < 9; row += 1) {
+        for (let col = 0; col < 9; col += 1) {
+          const inMarker = (col < 3 && row < 3) || (col > 5 && row < 3) || (col < 3 && row > 5);
+          if (inMarker) continue;
+          seed = (seed * 1664525 + 1013904223) >>> 0;
+          if (seed % 3 === 0) drawCell(col, row);
+        }
+      }
+
+      const lineX = x + qrSize + 18;
+      const lineW = w - qrSize - 18;
+      const rows = [0.13, 0.36, 0.59];
+      rows.forEach((row, index) => {
+        seed = (seed * 1103515245 + 12345) >>> 0;
+        const width = lineW * (0.48 + ((seed >>> index) % 45) / 100);
+        ctx.fillRect(lineX, y + h * row, width, Math.max(4, h * 0.06));
+      });
+      for (let i = 0; i < 9; i += 1) {
+        seed = (seed * 1103515245 + 12345) >>> 0;
+        const dotX = lineX + (seed % Math.max(1, Math.floor(lineW)));
+        const dotY = y + (seed >>> 8) % Math.max(1, Math.floor(h));
+        ctx.fillRect(dotX, dotY, 3, 3);
+      }
+
+      ctx.font = `800 ${Math.round(h * 0.13)}px ${fonts.sans}`;
+      ctx.textAlign = "left";
+      ctx.textBaseline = "top";
+      ctx.fillText(serialText, lineX, y + h * 0.78, lineW);
+    }
+
+    function drawBackground(ctx, w, h) {
+      const grd = ctx.createLinearGradient(0, 0, w, h);
+      grd.addColorStop(0, "#716b62");
+      grd.addColorStop(0.48, "#d6d0c4");
+      grd.addColorStop(1, "#565048");
+      ctx.fillStyle = grd;
+      ctx.fillRect(0, 0, w, h);
+      if (state.backdrop) {
+        ctx.save();
+        ctx.globalAlpha = Number($("backdropOpacity").value);
+        drawCoverImage(ctx, state.backdrop.image, 0, 0, w, h, "cover", 0.5, 0.5, 1);
+        ctx.restore();
+      }
+      ctx.fillStyle = "rgba(16, 15, 13, 0.48)";
+      ctx.fillRect(0, 0, w, h);
+    }
+
+    function drawTicket(ctx, w, h) {
+      const ticket = { x: 66, y: 78, w: 768, h: 1084 };
+      const pad = 40;
+      const paper = $("ticketColor").value;
+      const ink = $("textColor").value;
+      const line = $("lineColor").value;
+      const notchY = ticket.y + ticket.h * 0.75;
+      const notchR = 36;
+      const left = ticket.x + pad;
+      const right = ticket.x + ticket.w - pad;
+      const contentW = ticket.w - pad * 2;
+      const scale = ticket.w / 384;
+
+      ctx.save();
+      ctx.shadowColor = "rgba(0,0,0,0.28)";
+      ctx.shadowBlur = 48;
+      ctx.shadowOffsetY = 22;
+      roundedRect(ctx, ticket.x, ticket.y, ticket.w, ticket.h, 16);
+      ctx.fillStyle = paper;
+      ctx.fill();
+      ctx.restore();
+
+      ctx.save();
+      ctx.globalCompositeOperation = "destination-out";
+      ctx.beginPath();
+      ctx.arc(ticket.x, notchY, notchR, 0, Math.PI * 2);
+      ctx.arc(ticket.x + ticket.w, notchY, notchR, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+
+      ctx.fillStyle = ink;
+      ctx.textBaseline = "top";
+      ctx.textAlign = "center";
+      ctx.font = `${Math.round(8 * scale)}px ${fonts.sans}`;
+      drawWrappedText(ctx, $("eyebrowInput").value, ticket.x + ticket.w / 2, ticket.y + 19, contentW, 12 * scale, 2);
+
+      const photoY = ticket.y + 58;
+      const photoH = Number($("photoHeight").value) * scale;
+      if (state.photo) {
+        drawCoverImage(ctx, state.photo.image, left, photoY, contentW, photoH, $("fit").value, Number($("imageX").value) / 100, Number($("imageY").value) / 100, Number($("imageScale").value));
+      } else {
+        ctx.fillStyle = "#d0c9bd";
+        ctx.fillRect(left, photoY, contentW, photoH);
+        ctx.fillStyle = "#665f56";
+        ctx.font = `${Math.round(13 * scale)}px ${fonts.sans}`;
+        ctx.textAlign = "center";
+      }
+
+      let y = photoY + photoH + 22;
+      ctx.strokeStyle = line;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(left, y);
+      ctx.lineTo(right, y);
+      ctx.stroke();
+
+      y += 26;
+      ctx.fillStyle = ink;
+      ctx.textAlign = "left";
+      ctx.font = `${Math.round(15 * scale)}px ${fonts.sans}`;
+      drawWrappedText(ctx, $("subtitleInput").value, left, y, contentW, 19 * scale, 2);
+
+      y += 46;
+      ctx.font = `700 ${Math.round(Number($("titleSize").value) * scale)}px ${fonts.serif}`;
+      y = drawWrappedText(ctx, $("titleInput").value, left, y, contentW, Number($("titleSize").value) * 0.94 * scale, 4) + 28;
+
+      ctx.strokeStyle = line;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(left, y);
+      ctx.lineTo(right, y);
+      ctx.stroke();
+
+      y += 24;
+      ctx.font = `800 ${Math.round(13 * scale)}px ${fonts.sans}`;
+      ctx.fillText($("dateLabelInput").value, left, y);
+      ctx.fillText($("placeLabelInput").value, left, y + 31);
+      ctx.font = `${Math.round(13 * scale)}px ${fonts.sans}`;
+      drawWrappedText(ctx, $("dateInput").value, left + 66 * scale, y, contentW - 66 * scale, 18 * scale, 2);
+      drawWrappedText(ctx, $("placeInput").value, left + 66 * scale, y + 31, contentW - 66 * scale, 18 * scale, 2);
+
+      const bottomY = ticket.y + ticket.h - 150;
+      ctx.strokeStyle = line;
+      ctx.lineWidth = 2;
+      ctx.setLineDash([8, 6]);
+      ctx.beginPath();
+      ctx.moveTo(left, bottomY);
+      ctx.lineTo(right, bottomY);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      ctx.fillStyle = ink;
+      ctx.font = `${Math.round(20 * scale)}px ${fonts.narrow}`;
+      ctx.fillText($("footerTitleInput").value, left, bottomY + 30);
+      ctx.font = `900 ${Math.round(14 * scale)}px ${fonts.sans}`;
+      ctx.fillText($("footerSubInput").value, left, bottomY + 68);
+
+      const barcodeX = ticket.x + ticket.w - pad - 330;
+      const barcodeY = bottomY + 28;
+      drawTicketCode(ctx, barcodeX, barcodeY, 330, 88, line, $("serialInput").value + $("titleInput").value, $("serialInput").value);
+      ctx.font = `${Math.round(10 * scale)}px ${fonts.sans}`;
+      ctx.textAlign = "right";
+      ctx.fillText($("microInput").value, right, barcodeY + 100);
+    }
+
+    function downloadCanvas() {
+      const canvas = document.createElement("canvas");
+      canvas.width = 900;
+      canvas.height = 1260;
+      const ctx = canvas.getContext("2d");
+      drawBackground(ctx, canvas.width, canvas.height);
+      drawTicket(ctx, canvas.width, canvas.height);
+      const link = document.createElement("a");
+      link.download = `ticket-frame-${new Date().toISOString().slice(0, 10)}.png`;
+      link.href = canvas.toDataURL("image/png");
+      link.click();
+    }
+
+    bindText();
+    bindPhotoDrag();
+    syncColorText();
+    updateTheme();
+
+    $("photoInput").addEventListener("change", (event) => loadImageFromInput(event.target, setMainPhoto));
+    $("backdropInput").addEventListener("change", (event) => loadImageFromInput(event.target, setBackdrop));
+    ["fit", "imageScale", "imageX", "imageY"].forEach((id) => $(id).addEventListener("input", updateImageStyles));
+    ["ticketColor", "textColor", "lineColor", "backdropOpacity", "titleSize", "photoHeight"].forEach((id) => $(id).addEventListener("input", updateTheme));
+    window.addEventListener("resize", updateImageStyles);
+    $("resetPhotoPosition").addEventListener("click", () => {
+      $("imageScale").value = "1";
+      setImagePosition(50, 50);
+    });
+    $("downloadPng").addEventListener("click", downloadCanvas);
+  </script>
+</body>
+</html>
