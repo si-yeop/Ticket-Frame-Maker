@@ -207,7 +207,8 @@
       background-size: cover;
       background-position: center;
       opacity: var(--backdrop-opacity, 0.42);
-      filter: grayscale(0.08) contrast(0.92);
+      filter: blur(var(--backdrop-blur, 0px)) grayscale(0.08) contrast(0.92);
+      transform: scale(var(--backdrop-bleed, 1));
     }
 
     .preview-wrap {
@@ -593,6 +594,10 @@
             <label for="backdropOpacity">배경 농도</label>
             <input id="backdropOpacity" type="range" min="0" max="0.8" step="0.01" value="0.42">
           </div>
+          <div class="field">
+            <label for="backdropBlur">배경 흐림</label>
+            <input id="backdropBlur" type="range" min="0" max="12" step="0.5" value="0">
+          </div>
         </div>
         <div class="row">
           <div class="field">
@@ -870,6 +875,9 @@
       preview.style.setProperty("--ticket-line", lineColor);
       preview.style.setProperty("--ticket-muted", textColor);
       $("stage").style.setProperty("--backdrop-opacity", $("backdropOpacity").value);
+      const blur = Number($("backdropBlur").value);
+      $("stage").style.setProperty("--backdrop-blur", `${blur}px`);
+      $("stage").style.setProperty("--backdrop-bleed", String(1 + blur / 180));
       $("titleText").style.fontSize = `${$("titleSize").value}px`;
       $("photoBox").style.height = `${$("photoHeight").value}px`;
       updateImageStyles();
@@ -1021,7 +1029,11 @@
       if (state.backdrop) {
         ctx.save();
         ctx.globalAlpha = Number($("backdropOpacity").value);
-        drawCoverImage(ctx, state.backdrop.image, 0, 0, w, h, "cover", 0.5, 0.5, 1);
+        const blur = Number($("backdropBlur").value) * 2;
+        if (blur > 0 && "filter" in ctx) ctx.filter = `blur(${blur}px)`;
+        const bleed = blur * 2;
+        drawCoverImage(ctx, state.backdrop.image, -bleed, -bleed, w + bleed * 2, h + bleed * 2, "cover", 0.5, 0.5, 1);
+        ctx.filter = "none";
         ctx.restore();
       }
       ctx.fillStyle = "rgba(16, 15, 13, 0.48)";
@@ -1154,7 +1166,7 @@
     $("photoInput").addEventListener("change", (event) => loadImageFromInput(event.target, setMainPhoto));
     $("backdropInput").addEventListener("change", (event) => loadImageFromInput(event.target, setBackdrop));
     ["fit", "imageScale", "imageX", "imageY"].forEach((id) => $(id).addEventListener("input", updateImageStyles));
-    ["ticketColor", "textColor", "lineColor", "backdropOpacity", "titleSize", "photoHeight"].forEach((id) => $(id).addEventListener("input", updateTheme));
+    ["ticketColor", "textColor", "lineColor", "backdropOpacity", "backdropBlur", "titleSize", "photoHeight"].forEach((id) => $(id).addEventListener("input", updateTheme));
     window.addEventListener("resize", updateImageStyles);
     $("resetPhotoPosition").addEventListener("click", () => {
       $("imageScale").value = "1";
