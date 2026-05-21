@@ -320,14 +320,24 @@
     .meta {
       display: grid;
       grid-template-columns: 66px 1fr;
-      gap: 7px 0;
-      margin: 0 0 18px;
-      font-size: 13px;
-      line-height: 1.26;
+      gap: 3px 0;
+      margin: 0 0 10px;
+      font-size: 12px;
+      line-height: 1.14;
     }
 
     .meta strong {
       font-weight: 900;
+    }
+
+    .description {
+      align-self: start;
+      padding-top: 14px;
+      font-size: 12px;
+      line-height: 1.45;
+      color: var(--ticket-ink, #101010);
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
     }
 
     .bottom {
@@ -336,7 +346,7 @@
 
     .cutline {
       height: 1px;
-      margin-bottom: 13px;
+      margin-bottom: 10px;
       background:
         repeating-linear-gradient(90deg, var(--ticket-line, #1b1b1b) 0 4px, transparent 4px 7px);
     }
@@ -350,14 +360,14 @@
 
     .footer-title {
       font-family: Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif;
-      font-size: 20px;
+      font-size: 18px;
       line-height: 0.96;
       overflow-wrap: anywhere;
     }
 
     .footer-sub {
-      margin-top: 4px;
-      font-size: 14px;
+      margin-top: 3px;
+      font-size: 13px;
       font-weight: 900;
       line-height: 1.05;
       overflow-wrap: anywhere;
@@ -365,10 +375,10 @@
 
     .barcode {
       display: grid;
-      grid-template-columns: 45px 1fr;
-      gap: 9px;
+      grid-template-columns: 40px 1fr;
+      gap: 8px;
       align-items: end;
-      height: 45px;
+      height: 40px;
     }
 
     .qr-mark {
@@ -376,8 +386,8 @@
       grid-template-columns: repeat(9, 1fr);
       grid-template-rows: repeat(9, 1fr);
       gap: 2px;
-      width: 45px;
-      height: 45px;
+      width: 40px;
+      height: 40px;
     }
 
     .qr-cell {
@@ -390,14 +400,14 @@
 
     .serial-mark {
       display: grid;
-      gap: 5px;
+      gap: 4px;
       align-content: end;
-      height: 45px;
+      height: 40px;
     }
 
     .serial-mark span {
       display: block;
-      height: 4px;
+      height: 3px;
       background: var(--ticket-line, #111111);
     }
 
@@ -415,7 +425,7 @@
 
     .serial-number {
       min-height: 11px;
-      font-size: 9px;
+      font-size: 8px;
       font-weight: 800;
       line-height: 1;
       letter-spacing: 0;
@@ -567,6 +577,10 @@
           <input id="microInput" type="text" value="test">
         </div>
         <div class="field">
+          <label for="descriptionInput">설명 문구</label>
+          <textarea id="descriptionInput"></textarea>
+        </div>
+        <div class="field">
           <label for="serialInput">검표 시리얼 번호</label>
           <input id="serialInput" type="text" value="test">
         </div>
@@ -633,7 +647,7 @@
             <h2 class="title" id="titleText"></h2>
             <div class="info-rule"></div>
           </div>
-          <div></div>
+          <div class="description" id="descriptionText"></div>
           <div class="bottom">
             <div class="meta">
               <strong id="dateLabelText"></strong>
@@ -685,6 +699,7 @@
       footerTitleInput: "footerTitleText",
       footerSubInput: "footerSubText",
       microInput: "microText",
+      descriptionInput: "descriptionText",
       serialInput: "serialNumberText"
     };
 
@@ -1139,16 +1154,22 @@
       ctx.lineTo(right, y);
       ctx.stroke();
 
-      const bottomY = ticket.y + ticket.h - 150;
-      const metaY = bottomY - 76;
+      y += 26;
       ctx.fillStyle = ink;
       ctx.textAlign = "left";
-      ctx.font = `800 ${Math.round(13 * scale)}px ${fonts.sans}`;
+      ctx.font = `${Math.round(12 * scale)}px ${fonts.sans}`;
+      drawWrappedText(ctx, $("descriptionInput").value, left, y, contentW, 18 * scale, 8);
+
+      const bottomY = ticket.y + ticket.h - 150;
+      const metaY = bottomY - 54;
+      ctx.fillStyle = ink;
+      ctx.textAlign = "left";
+      ctx.font = `800 ${Math.round(12 * scale)}px ${fonts.sans}`;
       ctx.fillText($("dateLabelInput").value, left, metaY);
-      ctx.fillText($("placeLabelInput").value, left, metaY + 31);
-      ctx.font = `${Math.round(13 * scale)}px ${fonts.sans}`;
-      drawWrappedText(ctx, $("dateInput").value, left + 66 * scale, metaY, contentW - 66 * scale, 18 * scale, 2);
-      drawWrappedText(ctx, $("placeInput").value, left + 66 * scale, metaY + 31, contentW - 66 * scale, 18 * scale, 2);
+      ctx.fillText($("placeLabelInput").value, left, metaY + 24);
+      ctx.font = `${Math.round(12 * scale)}px ${fonts.sans}`;
+      drawWrappedText(ctx, $("dateInput").value, left + 66 * scale, metaY, contentW - 66 * scale, 16 * scale, 2);
+      drawWrappedText(ctx, $("placeInput").value, left + 66 * scale, metaY + 24, contentW - 66 * scale, 16 * scale, 2);
 
       ctx.strokeStyle = line;
       ctx.lineWidth = 2;
@@ -1160,17 +1181,17 @@
       ctx.setLineDash([]);
 
       ctx.fillStyle = ink;
-      ctx.font = `${Math.round(20 * scale)}px ${fonts.narrow}`;
+      ctx.font = `${Math.round(18 * scale)}px ${fonts.narrow}`;
       ctx.fillText($("footerTitleInput").value, left, bottomY + 30);
-      ctx.font = `900 ${Math.round(14 * scale)}px ${fonts.sans}`;
-      ctx.fillText($("footerSubInput").value, left, bottomY + 68);
+      ctx.font = `900 ${Math.round(13 * scale)}px ${fonts.sans}`;
+      ctx.fillText($("footerSubInput").value, left, bottomY + 64);
 
       const barcodeX = ticket.x + ticket.w - pad - 330;
       const barcodeY = bottomY + 28;
-      drawTicketCode(ctx, barcodeX, barcodeY, 330, 88, line, $("serialInput").value + $("titleInput").value, $("serialInput").value);
+      drawTicketCode(ctx, barcodeX, barcodeY, 330, 78, line, $("serialInput").value + $("titleInput").value, $("serialInput").value);
       ctx.font = `${Math.round(10 * scale)}px ${fonts.sans}`;
       ctx.textAlign = "right";
-      ctx.fillText($("microInput").value, right, barcodeY + 100);
+      ctx.fillText($("microInput").value, right, barcodeY + 88);
     }
 
     function downloadCanvas() {
