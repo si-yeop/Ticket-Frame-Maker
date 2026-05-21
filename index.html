@@ -321,7 +321,7 @@
       display: grid;
       grid-template-columns: 66px 1fr;
       gap: 7px 0;
-      margin-bottom: 16px;
+      margin: 0 0 18px;
       font-size: 13px;
       line-height: 1.26;
     }
@@ -632,15 +632,15 @@
             <p class="subtitle" id="subtitleText"></p>
             <h2 class="title" id="titleText"></h2>
             <div class="info-rule"></div>
+          </div>
+          <div></div>
+          <div class="bottom">
             <div class="meta">
               <strong id="dateLabelText"></strong>
               <span id="dateText"></span>
               <strong id="placeLabelText"></strong>
               <span id="placeText"></span>
             </div>
-          </div>
-          <div></div>
-          <div class="bottom">
             <div class="cutline"></div>
             <div class="footer">
               <div>
@@ -1139,15 +1139,17 @@
       ctx.lineTo(right, y);
       ctx.stroke();
 
-      y += 24;
-      ctx.font = `800 ${Math.round(13 * scale)}px ${fonts.sans}`;
-      ctx.fillText($("dateLabelInput").value, left, y);
-      ctx.fillText($("placeLabelInput").value, left, y + 31);
-      ctx.font = `${Math.round(13 * scale)}px ${fonts.sans}`;
-      drawWrappedText(ctx, $("dateInput").value, left + 66 * scale, y, contentW - 66 * scale, 18 * scale, 2);
-      drawWrappedText(ctx, $("placeInput").value, left + 66 * scale, y + 31, contentW - 66 * scale, 18 * scale, 2);
-
       const bottomY = ticket.y + ticket.h - 150;
+      const metaY = bottomY - 76;
+      ctx.fillStyle = ink;
+      ctx.textAlign = "left";
+      ctx.font = `800 ${Math.round(13 * scale)}px ${fonts.sans}`;
+      ctx.fillText($("dateLabelInput").value, left, metaY);
+      ctx.fillText($("placeLabelInput").value, left, metaY + 31);
+      ctx.font = `${Math.round(13 * scale)}px ${fonts.sans}`;
+      drawWrappedText(ctx, $("dateInput").value, left + 66 * scale, metaY, contentW - 66 * scale, 18 * scale, 2);
+      drawWrappedText(ctx, $("placeInput").value, left + 66 * scale, metaY + 31, contentW - 66 * scale, 18 * scale, 2);
+
       ctx.strokeStyle = line;
       ctx.lineWidth = 2;
       ctx.setLineDash([8, 6]);
