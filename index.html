@@ -89,6 +89,12 @@
       background: #ffffff;
     }
 
+    .button-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
     .group {
       padding: 18px 0;
       border-top: 1px solid #ded9cf;
@@ -507,7 +513,10 @@
             <input id="imageY" type="range" min="0" max="100" step="1" value="50">
           </div>
         </div>
-        <button class="secondary-btn" id="resetPhotoPosition" type="button">사진 위치 초기화</button>
+        <div class="button-row">
+          <button class="secondary-btn" id="resetPhotoPosition" type="button">사진 위치 초기화</button>
+          <button class="secondary-btn" id="clearPhoto" type="button">사진 제거</button>
+        </div>
       </section>
 
       <section class="group">
@@ -757,6 +766,9 @@
 
     function setMainPhoto(src, image) {
       state.photo = { src, image };
+      $("imageScale").value = "1";
+      $("imageX").value = "50";
+      $("imageY").value = "50";
       const box = $("photoBox");
       box.innerHTML = "";
       const img = document.createElement("img");
@@ -765,6 +777,18 @@
       img.draggable = false;
       box.appendChild(img);
       updateImageStyles();
+    }
+
+    function clearMainPhoto() {
+      state.photo = null;
+      state.drag = null;
+      $("photoInput").value = "";
+      $("imageScale").value = "1";
+      $("imageX").value = "50";
+      $("imageY").value = "50";
+      const box = $("photoBox");
+      box.classList.remove("is-dragging");
+      box.innerHTML = '<div class="placeholder" id="photoPlaceholder"></div>';
     }
 
     function setBackdrop(src, image) {
@@ -913,6 +937,14 @@
       ctx.closePath();
     }
 
+    function ticketPaperPath(ctx, ticket, notchY, notchR) {
+      roundedRect(ctx, ticket.x, ticket.y, ticket.w, ticket.h, 16);
+      ctx.moveTo(ticket.x + notchR, notchY);
+      ctx.arc(ticket.x, notchY, notchR, 0, Math.PI * 2);
+      ctx.moveTo(ticket.x + ticket.w + notchR, notchY);
+      ctx.arc(ticket.x + ticket.w, notchY, notchR, 0, Math.PI * 2);
+    }
+
     function drawCoverImage(ctx, image, x, y, w, h, fit, posX, posY, scale) {
       const imgRatio = image.naturalWidth / image.naturalHeight;
       const boxRatio = w / h;
@@ -1057,17 +1089,9 @@
       ctx.shadowColor = "rgba(0,0,0,0.28)";
       ctx.shadowBlur = 48;
       ctx.shadowOffsetY = 22;
-      roundedRect(ctx, ticket.x, ticket.y, ticket.w, ticket.h, 16);
+      ticketPaperPath(ctx, ticket, notchY, notchR);
       ctx.fillStyle = paper;
-      ctx.fill();
-      ctx.restore();
-
-      ctx.save();
-      ctx.globalCompositeOperation = "destination-out";
-      ctx.beginPath();
-      ctx.arc(ticket.x, notchY, notchR, 0, Math.PI * 2);
-      ctx.arc(ticket.x + ticket.w, notchY, notchR, 0, Math.PI * 2);
-      ctx.fill();
+      ctx.fill("evenodd");
       ctx.restore();
 
       ctx.fillStyle = ink;
@@ -1172,6 +1196,7 @@
       $("imageScale").value = "1";
       setImagePosition(50, 50);
     });
+    $("clearPhoto").addEventListener("click", clearMainPhoto);
     $("downloadPng").addEventListener("click", downloadCanvas);
   </script>
 </body>
