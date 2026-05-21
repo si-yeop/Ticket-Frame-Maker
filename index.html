@@ -95,6 +95,12 @@
       gap: 10px;
     }
 
+    .template-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+    }
+
     .group {
       padding: 18px 0;
       border-top: 1px solid #ded9cf;
@@ -529,6 +535,23 @@
       </section>
 
       <section class="group">
+        <div class="group-title">템플릿</div>
+        <div class="field">
+          <label for="templateName">템플릿 이름</label>
+          <input id="templateName" type="text" value="test">
+        </div>
+        <div class="field">
+          <label for="templateList">저장된 템플릿</label>
+          <select id="templateList"></select>
+        </div>
+        <div class="template-actions">
+          <button class="secondary-btn" id="saveTemplate" type="button">저장</button>
+          <button class="secondary-btn" id="loadTemplate" type="button">불러오기</button>
+          <button class="secondary-btn" id="deleteTemplate" type="button">삭제</button>
+        </div>
+      </section>
+
+      <section class="group">
         <div class="group-title">문구</div>
         <div class="field">
           <label for="eyebrowInput">상단 문구</label>
@@ -709,6 +732,31 @@
       narrow: 'Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif'
     };
 
+    const templateKey = "ticket-frame-maker-templates-v1";
+    const templateFields = [
+      "eyebrowInput",
+      "subtitleInput",
+      "titleInput",
+      "dateInput",
+      "placeInput",
+      "footerTitleInput",
+      "footerSubInput",
+      "microInput",
+      "descriptionInput",
+      "serialInput",
+      "fit",
+      "imageScale",
+      "imageX",
+      "imageY",
+      "ticketColor",
+      "textColor",
+      "lineColor",
+      "backdropOpacity",
+      "backdropBlur",
+      "titleSize",
+      "photoHeight"
+    ];
+
     function bindText() {
       Object.entries(fields).forEach(([inputId, targetId]) => {
         const input = $(inputId);
@@ -808,6 +856,125 @@
     function setBackdrop(src, image) {
       state.backdrop = { src, image };
       $("stage").style.setProperty("--backdrop-image", `url("${src}")`);
+    }
+
+    function readTemplates() {
+      try {
+        return JSON.parse(localStorage.getItem(templateKey) || "{}");
+      } catch {
+        return {};
+      }
+    }
+
+    function writeTemplates(templates) {
+      localStorage.setItem(templateKey, JSON.stringify(templates));
+    }
+
+    function renderTemplateList(selectedName = "") {
+      const list = $("templateList");
+      const templates = readTemplates();
+      const names = Object.keys(templates).sort((a, b) => a.localeCompare(b));
+      list.innerHTML = "";
+      if (!names.length) {
+        const option = document.createElement("option");
+        option.value = "";
+        option.textContent = "저장된 템플릿 없음";
+        list.appendChild(option);
+        return;
+      }
+      names.forEach((name) => {
+        const option = document.createElement("option");
+        option.value = name;
+        option.textContent = name;
+        if (name === selectedName) option.selected = true;
+        list.appendChild(option);
+      });
+    }
+
+    function currentTemplateData(includeImages = true) {
+      const values = {};
+      templateFields.forEach((id) => {
+        values[id] = $(id).value;
+      });
+      return {
+        values,
+        photo: includeImages ? state.photo?.src || "" : "",
+        backdrop: includeImages ? state.backdrop?.src || "" : ""
+      };
+    }
+
+    function saveTemplate() {
+      const name = $("templateName").value.trim() || `template-${new Date().toISOString().slice(0, 10)}`;
+      const templates = readTemplates();
+      templates[name] = currentTemplateData(true);
+      try {
+        writeTemplates(templates);
+      } catch {
+        templates[name] = currentTemplateData(false);
+        writeTemplates(templates);
+        alert("이미지 용량이 커서 문구와 스타일 설정만 저장했습니다.");
+      }
+      $("templateName").value = name;
+      renderTemplateList(name);
+    }
+
+    function applyTemplateData(data) {
+      if (!data) return;
+      Object.entries(data.values || {}).forEach(([id, value]) => {
+        const input = $(id);
+        if (input) {
+          input.value = value;
+          input.dispatchEvent(new Event("input", { bubbles: true }));
+        }
+      });
+
+      if (data.photo) {
+        const image = new Image();
+        image.onload = () => {
+          setMainPhoto(data.photo, image);
+          ["imageScale", "imageX", "imageY"].forEach((id) => {
+            if (data.values?.[id]) $(id).value = data.values[id];
+          });
+          updateImageStyles();
+        };
+        image.src = data.photo;
+      } else {
+        clearMainPhoto();
+      }
+
+      if (data.backdrop) {
+        const image = new Image();
+        image.onload = () => setBackdrop(data.backdrop, image);
+        image.src = data.backdrop;
+      } else {
+        state.backdrop = null;
+        $("backdropInput").value = "";
+        $("stage").style.setProperty("--backdrop-image", "none");
+      }
+
+      document.querySelectorAll("[data-color-text]").forEach((input) => {
+        const color = $(input.dataset.colorText);
+        input.value = color.value;
+      });
+      updateTheme();
+      updateTicketCodePattern();
+    }
+
+    function loadTemplate() {
+      const name = $("templateList").value;
+      if (!name) return;
+      const templates = readTemplates();
+      $("templateName").value = name;
+      applyTemplateData(templates[name]);
+    }
+
+    function deleteTemplate() {
+      const name = $("templateList").value;
+      if (!name) return;
+      const templates = readTemplates();
+      delete templates[name];
+      writeTemplates(templates);
+      renderTemplateList();
     }
 
     function updateImageStyles() {
@@ -951,29 +1118,6 @@
       ctx.closePath();
     }
 
-    function ticketPaperPath(ctx, ticket, notchY, notchR) {
-      const x = ticket.x;
-      const y = ticket.y;
-      const w = ticket.w;
-      const h = ticket.h;
-      const r = 16;
-      ctx.beginPath();
-      ctx.moveTo(x + r, y);
-      ctx.lineTo(x + w - r, y);
-      ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-      ctx.lineTo(x + w, notchY - notchR);
-      ctx.arc(x + w, notchY, notchR, -Math.PI / 2, Math.PI / 2, false);
-      ctx.lineTo(x + w, y + h - r);
-      ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-      ctx.lineTo(x + r, y + h);
-      ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-      ctx.lineTo(x, notchY + notchR);
-      ctx.arc(x, notchY, notchR, Math.PI / 2, -Math.PI / 2, false);
-      ctx.lineTo(x, y + r);
-      ctx.quadraticCurveTo(x, y, x + r, y);
-      ctx.closePath();
-    }
-
     function drawCoverImage(ctx, image, x, y, w, h, fit, posX, posY, scale) {
       const imgRatio = image.naturalWidth / image.naturalHeight;
       const boxRatio = w / h;
@@ -1094,6 +1238,16 @@
       ctx.fillRect(0, 0, w, h);
     }
 
+    function revealNotches(ctx, canvasW, canvasH, ticket, notchY, notchR) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(ticket.x, notchY, notchR, 0, Math.PI * 2);
+      ctx.arc(ticket.x + ticket.w, notchY, notchR, 0, Math.PI * 2);
+      ctx.clip();
+      drawBackground(ctx, canvasW, canvasH);
+      ctx.restore();
+    }
+
     function drawTicket(ctx, w, h) {
       const ticket = { x: 66, y: 78, w: 768, h: 1084 };
       const pad = 40;
@@ -1107,7 +1261,7 @@
       const contentW = ticket.w - pad * 2;
       const scale = ticket.w / 384;
 
-      ticketPaperPath(ctx, ticket, notchY, notchR);
+      roundedRect(ctx, ticket.x, ticket.y, ticket.w, ticket.h, 16);
       ctx.fillStyle = paper;
       ctx.fill();
 
@@ -1192,6 +1346,8 @@
       ctx.font = `${Math.round(10 * scale)}px ${fonts.sans}`;
       ctx.textAlign = "right";
       ctx.fillText($("microInput").value, right, barcodeY + 88);
+
+      revealNotches(ctx, w, h, ticket, notchY, notchR);
     }
 
     function downloadCanvas() {
@@ -1211,6 +1367,7 @@
     bindPhotoDrag();
     syncColorText();
     updateTheme();
+    renderTemplateList();
 
     $("photoInput").addEventListener("change", (event) => loadImageFromInput(event.target, setMainPhoto));
     $("backdropInput").addEventListener("change", (event) => loadImageFromInput(event.target, setBackdrop));
@@ -1222,6 +1379,9 @@
       setImagePosition(50, 50);
     });
     $("clearPhoto").addEventListener("click", clearMainPhoto);
+    $("saveTemplate").addEventListener("click", saveTemplate);
+    $("loadTemplate").addEventListener("click", loadTemplate);
+    $("deleteTemplate").addEventListener("click", deleteTemplate);
     $("downloadPng").addEventListener("click", downloadCanvas);
   </script>
 </body>
